@@ -20,6 +20,8 @@ def min_modify_time(files):
   return min(os.stat(f).st_mtime for f in files)
 
 def ensure_dir(directory):
+  if not directory:
+    return
   if not os.path.exists(directory):
     cmd('mkdir -p {}'.format(directory))
 

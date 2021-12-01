@@ -33,31 +33,43 @@ def defualt_files(default_fns):
 def construct_staging_dirs(user_input):
   return {'dev': user_input}
 
+class DynamicConfig:
+  def __init__(self):
+    self.required_keys = {
+      'staging_dirs': ('The director(y|ies) to which finalized files are copied.', None, construct_staging_dirs),
+      'browserify_bin': ('A path to the browserify binary.', defualt_files([
+        'npm_libs/node_modules/.bin/browserify',
+        '/usr/bin/browserify',
+        '/usr/local/bin/browserify',
+      ]), None),
+      'uglifyjs_bin': ('A path to the uglifyjs binary.', defualt_files([
+        'npm_libs/node_modules/.bin/uglifyjs',
+        '/usr/bin/uglifyjs',
+        '/usr/local/bin/uglifyjs',
+      ]), None),
+    }
+    self.config_fn = 'local_config.json'
+    self.config = {}
+    if os.path.exists(self.config_fn):
+      with open(self.config_fn) as f:
+        self.config = json.load(f)
+  def _save(self):
+    with open(self.config_fn, 'w') as f:
+      json.dump(self.config, f, indent='  ', sort_keys=True)
+  def __getitem__(self, key):
+    if key in self.config:
+      return self.config[key]
+    if key in self.required_keys:
+      if ensure_config_key(self.config, key, *self.required_keys[key]):
+        self._save()
+    raise KeyError(key)
+  def __contains__(self, key):
+    if key in self.config:
+      return True
+    if key in self.required_keys:
+      if ensure_config_key(self.config, key, *self.required_keys[key]):
+        self._save()
+    return False
+
 def local_config():
-  config_fn = 'local_config.json'
-  required_keys = [
-    ('staging_dirs', 'The director(y|ies) to which finalized files are copied.', None, construct_staging_dirs),
-    ('browserify_bin', 'A path to the browserify binary.', defualt_files([
-      'npm_libs/node_modules/.bin/browserify',
-      '/usr/bin/browserify',
-      '/usr/local/bin/browserify',
-    ]), None),
-    ('uglifyjs_bin', 'A path to the uglifyjs binary.', defualt_files([
-      'npm_libs/node_modules/.bin/uglifyjs',
-      '/usr/bin/uglifyjs',
-      '/usr/local/bin/uglifyjs',
-    ]), None),
-  ]
-  config = {}
-  if os.path.exists(config_fn):
-    with open(config_fn) as f:
-      config = json.load(f)
-
-  config_updated = any(
-    ensure_config_key(config, *params) for params in required_keys
-  )
-
-  if config_updated:
-    with open(config_fn, 'w') as f:
-      json.dump(config, f, indent='  ', sort_keys=True)
-  return config
+  return DynamicConfig()

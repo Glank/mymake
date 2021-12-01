@@ -97,7 +97,11 @@ def noop(config):
   pass
 
 def stage(config):
+  assert len(config['out']) == 0
   params = config.get('params', {})
+  out = params.get('out', None)
+  if out:
+    assert len(out) == len(config['in'])
   sub_dir = params.get('subdir', '')
   staging_dirs = params['stagingdirs']
   dest_dirs = local_config()['staging_dirs']
@@ -108,9 +112,12 @@ def stage(config):
     if sub_dir:
         dest_dir = os.path.join(dest_dir, sub_dir)
     ensure_dir(dest_dir)
-    for src_fn in config['in']:
+    for i, src_fn in enumerate(config['in']):
       _, fn = os.path.split(src_fn)
-      dest_fn = os.path.join(dest_dir, fn)
+      if out:
+        dest_fn = os.path.join(dest_dir, out[i])
+      else:
+        dest_fn = os.path.join(dest_dir, fn)
       if modify_time(dest_fn) < modify_time(src_fn):
         cmd('cp {} {}'.format(src_fn, dest_fn))
 
