@@ -41,7 +41,10 @@ def run_build_rule(rule_path, visited=None):
   # pen the correct build rule list
   config_fn = os.path.join(rule_dir, 'build.json')
   with open(config_fn) as f:
-    rule_list = json.load(f)
+    try:
+      rule_list = json.load(f)
+    except Exception as e:
+      raise RuntimeError("Could not decode json at "+config_fn+'\n'+e.msg);
   # select the rule config with the correct name
   rule_configs = [rc for rc in rule_list if rc['name'] == rule_name]
   if not rule_configs:
