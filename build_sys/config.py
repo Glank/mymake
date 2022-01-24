@@ -63,6 +63,11 @@ class DynamicConfig:
       if ensure_config_key(self.config, key, *self.required_keys[key]):
         self._save()
     raise KeyError(key)
+  def get(self, key, default):
+    try:
+      return self[key]
+    except KeyError as e:
+      return default;
   def __contains__(self, key):
     if key in self.config:
       return True
